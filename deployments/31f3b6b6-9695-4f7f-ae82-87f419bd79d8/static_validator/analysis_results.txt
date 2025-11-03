@@ -1,0 +1,13 @@
+File: network.tf, Line: 1, Column: 1, Message: Resource aws_vpc.dmz missing lifecycle block in network.tf: 
+File: network.tf, Line: 12, Column: 1, Message: Resource aws_internet_gateway.this missing lifecycle block in network.tf: 
+File: network.tf, Line: 20, Column: 1, Message: Resource aws_subnet.dmz_public missing lifecycle block in network.tf: 
+File: network.tf, Line: 33, Column: 1, Message: Resource aws_route_table.public missing lifecycle block in network.tf: 
+File: network.tf, Line: 36, Column: 1, Message: Unexpected "route" block: Blocks are not allowed here.
+File: network.tf, Line: 46, Column: 1, Message: Resource aws_route_table_association.dmz_public_assoc missing lifecycle block in network.tf: 
+File: network.tf, Line: 46, Column: 1, Message: Resource aws_route_table_association.dmz_public_assoc missing tags attribute in network.tf: 
+File: security.tf, Line: 1, Column: 1, Message: Resource aws_security_group.dmz_sg missing lifecycle block in security.tf: 
+File: security.tf, Line: 6, Column: 1, Message: Unexpected "ingress" block: Blocks are not allowed here.
+File: compute.tf, Line: 1, Column: 1, Message: Resource aws_instance.nginx missing lifecycle block in compute.tf: 
+File: compute.tf, Line: 35, Column: 1, Message: Resource aws_eip.nginx missing lifecycle block in compute.tf: 
+File: compute.tf, Line: 43, Column: 1, Message: Resource aws_eip_association.nginx_assoc missing lifecycle block in compute.tf: 
+File: compute.tf, Line: 43, Column: 1, Message: Resource aws_eip_association.nginx_assoc missing tags attribute in compute.tf: 

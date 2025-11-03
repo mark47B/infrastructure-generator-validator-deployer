@@ -1,0 +1,49 @@
+{
+  "created_at": "2025-10-05T17:50:01.90538568Z",
+  "files": [
+    {
+      "job_id": "31f3b6b6-9695-4f7f-ae82-87f419bd79d8",
+      "name": "main.tf",
+      "content": "terraform {\nrequired_version = \"\u003e= 1.4.0\"\nrequired_providers {\naws = {\nsource  = \"hashicorp/aws\"\nversion = \"~\u003e 5.0\"\n}\n}\n}\n\nprovider \"aws\" {\nregion = var.region\n}\n\ndata \"aws_availability_zones\" \"available\" {\nstate = \"available\"\n}\n\ndata \"aws_ami\" \"amazon_linux2\" {\nmost_recent = true\nowners      = [\"amazon\"]\n\nfilter {\nname   = \"name\"\nvalues = [\"amzn2-ami-hvm-*-x86_64-gp2\"]\n}\n\nfilter {\nname   = \"virtualization-type\"\nvalues = [\"hvm\"]\n}\n\nfilter {\nname   = \"root-device-type\"\nvalues = [\"ebs\"]\n}\n}\n\nlocals {\naz = data.aws_availability_zones.available.names[0]\ntags = {\nProject = var.project_name\nManaged = \"terraform\"\n}\n}",
+      "type": "terraform",
+      "has_error": false
+    },
+    {
+      "job_id": "31f3b6b6-9695-4f7f-ae82-87f419bd79d8",
+      "name": "variables.tf",
+      "content": "variable \"region\" {\ndescription = \"AWS region\"\ntype        = string\ndefault     = \"us-east-1\"\n}\n\nvariable \"project_name\" {\ndescription = \"Project name for tagging\"\ntype        = string\ndefault     = \"nginx-dmz\"\n}\n\nvariable \"instance_type\" {\ndescription = \"EC2 instance type\"\ntype        = string\ndefault     = \"t3.micro\"\n}\n\nvariable \"allowed_ssh_cidr\" {\ndescription = \"CIDR block allowed to SSH into the instance\"\ntype        = string\ndefault     = \"0.0.0.0/0\"\n}\n\nvariable \"vpc_cidr\" {\ndescription = \"CIDR block for the VPC\"\ntype        = string\ndefault     = \"10.50.0.0/16\"\n}\n\nvariable \"dmz_subnet_cidr\" {\ndescription = \"CIDR block for the DMZ public subnet\"\ntype        = string\ndefault     = \"10.50.10.0/24\"\n}",
+      "type": "terraform",
+      "has_error": false
+    },
+    {
+      "job_id": "31f3b6b6-9695-4f7f-ae82-87f419bd79d8",
+      "name": "network.tf",
+      "content": "resource \"aws_vpc\" \"dmz\" {\ncidr_block           = var.vpc_cidr\nenable_dns_hostnames = true\nenable_dns_support   = true\n\ntags = merge(local.tags, {\nName = \"${var.project_name}-vpc\"\nZone = \"dmz\"\n})\n}\n\nresource \"aws_internet_gateway\" \"this\" {\nvpc_id = aws_vpc.dmz.id\n\ntags = merge(local.tags, {\nName = \"${var.project_name}-igw\"\n})\n}\n\nresource \"aws_subnet\" \"dmz_public\" {\nvpc_id                  = aws_vpc.dmz.id\ncidr_block              = var.dmz_subnet_cidr\navailability_zone       = local.az\nmap_public_ip_on_launch = false\n\ntags = merge(local.tags, {\nName = \"${var.project_name}-dmz-public\"\nTier = \"dmz\"\nPublic = \"true\"\n})\n}\n\nresource \"aws_route_table\" \"public\" {\nvpc_id = aws_vpc.dmz.id\n\nroute {\ncidr_block = \"0.0.0.0/0\"\ngateway_id = aws_internet_gateway.this.id\n}\n\ntags = merge(local.tags, {\nName = \"${var.project_name}-public-rt\"\n})\n}\n\nresource \"aws_route_table_association\" \"dmz_public_assoc\" {\nsubnet_id      = aws_subnet.dmz_public.id\nroute_table_id = aws_route_table.public.id\n}",
+      "type": "terraform",
+      "has_error": false
+    },
+    {
+      "job_id": "31f3b6b6-9695-4f7f-ae82-87f419bd79d8",
+      "name": "security.tf",
+      "content": "resource \"aws_security_group\" \"dmz_sg\" {\nname        = \"${var.project_name}-dmz-sg\"\ndescription = \"DMZ security group allowing HTTP/HTTPS and SSH\"\nvpc_id      = aws_vpc.dmz.id\n\ningress {\ndescription = \"HTTP\"\nprotocol    = \"tcp\"\nfrom_port   = 80\nto_port     = 80\ncidr_blocks = [\"0.0.0.0/0\"]\n}\n\ningress {\ndescription = \"HTTPS\"\nprotocol    = \"tcp\"\nfrom_port   = 443\nto_port     = 443\ncidr_blocks = [\"0.0.0.0/0\"]\n}\n\ningress {\ndescription = \"SSH\"\nprotocol    = \"tcp\"\nfrom_port   = 22\nto_port     = 22\ncidr_blocks = [var.allowed_ssh_cidr]\n}\n\negress {\ndescription = \"All egress\"\nprotocol    = \"-1\"\nfrom_port   = 0\nto_port     = 0\ncidr_blocks = [\"0.0.0.0/0\"]\n}\n\ntags = merge(local.tags, {\nName = \"${var.project_name}-dmz-sg\"\n})\n}",
+      "type": "terraform",
+      "has_error": false
+    },
+    {
+      "job_id": "31f3b6b6-9695-4f7f-ae82-87f419bd79d8",
+      "name": "compute.tf",
+      "content": "resource \"aws_instance\" \"nginx\" {\nami                         = data.aws_ami.amazon_linux2.id\ninstance_type               = var.instance_type\nsubnet_id                   = aws_subnet.dmz_public.id\nvpc_security_group_ids      = [aws_security_group.dmz_sg.id]\nassociate_public_ip_address = false\n\nuser_data = \u003c\u003c-EOF\n#!/bin/bash\nset -euxo pipefail\nyum update -y\namazon-linux-extras enable nginx1\nyum clean metadata\nyum install -y nginx\nsystemctl enable nginx\ncat \u003e/usr/share/nginx/html/index.html \u003c\u003c'EOT'\n\u003c!DOCTYPE html\u003e\n\u003chtml\u003e\n\u003chead\u003e\u003cmeta charset=\"utf-8\"\u003e\u003ctitle\u003eNginx DMZ\u003c/title\u003e\u003c/head\u003e\n\u003cbody style=\"font-family:sans-serif;\"\u003e\n\u003ch1\u003eNginx is running\u003c/h1\u003e\n\u003cp\u003eDeployed in DMZ with a public (white) IP.\u003c/p\u003e\n\u003c/body\u003e\n\u003c/html\u003e\nEOT\nsystemctl restart nginx\nEOF\n\ntags = merge(local.tags, {\nName = \"${var.project_name}-nginx\"\nRole = \"web\"\n})\n}\n\nresource \"aws_eip\" \"nginx\" {\ndomain = \"vpc\"\n\ntags = merge(local.tags, {\nName = \"${var.project_name}-eip\"\n})\n}\n\nresource \"aws_eip_association\" \"nginx_assoc\" {\nallocation_id = aws_eip.nginx.id\ninstance_id   = aws_instance.nginx.id\n}",
+      "type": "terraform",
+      "has_error": false
+    },
+    {
+      "job_id": "31f3b6b6-9695-4f7f-ae82-87f419bd79d8",
+      "name": "outputs.tf",
+      "content": "output \"vpc_id\" {\nvalue       = aws_vpc.dmz.id\ndescription = \"VPC ID\"\n}\n\noutput \"dmz_subnet_id\" {\nvalue       = aws_subnet.dmz_public.id\ndescription = \"DMZ public subnet ID\"\n}\n\noutput \"instance_id\" {\nvalue       = aws_instance.nginx.id\ndescription = \"EC2 instance ID\"\n}\n\noutput \"public_ip\" {\nvalue       = aws_eip.nginx.public_ip\ndescription = \"Public EIP of the Nginx instance\"\n}\n\noutput \"nginx_url\" {\nvalue       = \"http://${aws_eip.nginx.public_ip}\"\ndescription = \"HTTP URL to access Nginx\"\n}",
+      "type": "terraform",
+      "has_error": false
+    }
+  ],
+  "files_count": 6,
+  "request_id": "31f3b6b6-9695-4f7f-ae82-87f419bd79d8"
+}

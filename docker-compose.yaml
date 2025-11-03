@@ -1,0 +1,78 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app_network
+
+  orchestrator:
+    build: ./orcestrator
+    container_name: orchestrator
+    ports:
+      - "8080:8080"
+    environment:
+      - AMVERA_API_KEY=${AMVERA_API_KEY}
+      - AMVERA_BASE_URL=${AMVERA_BASE_URL}
+      - AMVERA_MODEL=${AMVERA_MODEL}
+      - VALIDATION_SERVICE_URL=${VALIDATION_SERVICE_URL}
+      - STORAGE_BASE_PATH=/app/deployments
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB=orchestrator
+    volumes:
+      - ./deployments:/app/deployments
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - app_network
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - orchestrator
+      - mongo
+    networks:
+      - app_network
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - app_network
+
+volumes:
+  mongo_data:
+  grafana_data:
+  prometheus_data:
+
+networks:
+  app_network:
+    driver: bridge

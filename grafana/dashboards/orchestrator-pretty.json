@@ -1,0 +1,298 @@
+{
+  "id": null,
+  "uid": "orchestrator-pretty",
+  "title": "Orchestrator Dashboard",
+  "tags": ["orchestrator", "prometheus", "llm", "http", "mongo"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "editable": true,
+  "style": "dark",
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard",
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        }
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m"]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "HTTP API Metrics",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "Requests per Endpoint",
+          "id": 1,
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093", "default": true },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "expr": "sum(increase(http_requests_total[1m])) by (method, path)",
+              "legendFormat": "{{method}} {{path}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": { "mode": "palette-classic" },
+              "custom": { "lineWidth": 2, "fillOpacity": 15 }
+            }
+          },
+          "options": { "legend": { "displayMode": "table" } }
+        },
+        {
+          "type": "timeseries",
+          "title": "HTTP Errors per Endpoint",
+          "id": 2,
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093", "default": true },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "expr": "sum(increase(http_errors_total[1m])) by (method, path, status)",
+              "legendFormat": "{{method}} {{path}} ({{status}})"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": { "mode": "continuous-GrYlRd" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 10 },
+                  { "color": "red", "value": 50 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Average Request Duration",
+          "id": 3,
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093", "default": true },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "expr": "rate(http_request_duration_seconds_sum[1m]) / rate(http_request_duration_seconds_count[1m])",
+              "legendFormat": "avg duration"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": { "mode": "palette-classic" }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "LLM / Amvera Metrics",
+      "gridPos": { "x": 0, "y": 1, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "Requests per Model",
+          "id": 4,
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093", "default": true },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "expr": "sum(increase(llm_requests_total[1m])) by (model)",
+              "legendFormat": "{{model}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "palette-classic" } }
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Errors by Type",
+          "id": 5,
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093", "default": true },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "expr": "sum(increase(llm_errors_total[1m])) by (source, action)",
+              "legendFormat": "{{source}}:{{action}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "continuous-GrYlRd" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 1 },
+                  { "color": "red", "value": 5 }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "MongoDB / File Metrics",
+      "gridPos": { "x": 0, "y": 2, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "File Operations",
+          "id": 6,
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093", "default": true },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "expr": "sum(increase(llmgen_db_file_operations_total[1m])) by (operation)",
+              "legendFormat": "{{operation}}"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Errors by Repo",
+          "id": 7,
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093", "default": true },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "expr": "sum(increase(llmgen_errors_total[1m])) by (source, action)",
+              "legendFormat": "{{source}}:{{action}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Job Metrics",
+      "gridPos": { "x": 0, "y": 3, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Total Jobs Created",
+          "id": 8,
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093", "default": true },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "expr": "llmgen_jobs_created_total"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "red", "value": 100 }
+                ]
+              }
+            }
+          },
+          "options": {
+            "orientation": "auto",
+            "textMode": "value"
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Job Status Changes",
+          "id": 9,
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093", "default": true },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "expr": "sum(increase(llmgen_job_status_changes_total[1m])) by (status)",
+              "legendFormat": "{{status}}"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Active Jobs",
+          "id": 10,
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093", "default": true },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "expr": "llmgen_jobs_active",
+              "legendFormat": "active"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "short"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Global Errors",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 1 },
+      "collapsed": false,
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "Errors by Source & Action",
+          "id": 11,
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093", "default": true },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+              "expr": "sum(increase(llmgen_errors_total[1m])) by (source, action)",
+              "legendFormat": "{{source}}:{{action}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "continuous-GrYlRd" },
+              "thresholds": {
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "red", "value": 1 }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
