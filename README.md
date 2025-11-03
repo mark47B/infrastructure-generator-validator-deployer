@@ -4,6 +4,13 @@
 
 > Был написан за два дня в рамках `MTS-DevOps-Hack`
 
+### 🧰 Технологии
+- **Backend:** Go (1.20+)
+- **Infrastructure:** Docker, Docker Compose, Terraform, Prometheus, Grafana, GitLab CI, Makefile
+- **Интеграции:** Amvera (LLM API)
+- **База данных:** MongoDB
+- **Frontend:** HTML, CSS, JavaScript (минимальный UI)
+
 ## Пример работы
 1. Вводим желаемый конфиг
 ![ex1](img/run_example/image.png)
@@ -92,20 +99,6 @@ git clone <repo-url>
 cd <repo-dir>
 cp example.env .env      # заполните .env реальными значениями
 ```
-
-### Пример переменных окружения (в `example.env`)
-
-```env
-AMVERA_API_KEY=your_amvera_key
-MONGO_URI=mongodb://mongo:27017/orchestrator
-RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-KAFKA_BROKERS=broker1:9092
-PROMETHEUS_PUSHGATEWAY_URL=http://pushgateway:9091
-LOG_LEVEL=info
-STORAGE_FS_ROOT=/data/deployments
-```
-
-> `example.env` в репозитории — шаблон: заполните токены/URI.
 
 ### Запуск (всем стеком, локально)
 
