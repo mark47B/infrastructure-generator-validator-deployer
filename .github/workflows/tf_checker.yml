@@ -1,0 +1,59 @@
+name: Terraform Validate
+
+on:
+  push:
+    branches: [tf_checker]
+
+jobs:
+  terraform-validate:
+    runs-on: ubuntu-latest
+    container:
+      image: hashicorp/terraform:1.9.8
+      options: --entrypoint ""
+    env:
+      TF_IN_AUTOMATION: "1"
+    if: github.event_name != 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          apk add --no-cache curl unzip
+          curl -L https://github.com/terraform-linters/tflint/releases/download/v0.50.0/tflint_linux_amd64.zip -o tflint.zip
+          unzip tflint.zip && mv tflint /usr/local/bin/
+      - name: Show Terraform version
+        run: terraform --version
+      - name: List deployments directory
+        run: |
+          cd deployments
+          ls -la
+      - name: Validate Terraform code
+        run: |
+          cd deployments
+          EXIT_CODE=0
+          for dir in */; do
+            if [ -f "$dir/main.tf" ]; then
+              echo "Validating Terraform code in $dir"
+              cd "$dir" || { echo "Failed to cd into $dir"; EXIT_CODE=1; continue; }
+              
+              echo "Contents of main.tf:"
+              cat main.tf || echo "No main.tf found"
+              
+              echo "Running tflint in $dir"
+              tflint --config=.tflint.hcl 2>&1 || { echo "tflint failed in $dir"; EXIT_CODE=1; }
+              
+              echo "Running terraform fmt in $dir"
+              terraform fmt -check -recursive -diff 2>&1 || { echo "terraform fmt failed in $dir"; EXIT_CODE=1; }
+              
+              echo "Running terraform init in $dir"
+              terraform init -backend=false 2>&1 || { echo "terraform init failed in $dir"; EXIT_CODE=1; }
+              
+              echo "Running terraform validate in $dir"
+              terraform validate 2>&1 || { echo "terraform validate failed in $dir"; EXIT_CODE=1; }
+              
+              cd .. || { echo "Failed to return to deployments directory"; EXIT_CODE=1; }
+            else
+              echo "Skipping $dir: No main.tf found"
+            fi
+          done
+          echo "Validation complete. Exit code: $EXIT_CODE"
+          exit $EXIT_CODE
